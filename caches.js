@@ -1,9 +1,3 @@
-let teamCache = [];
-let divisionCache = [];
-let timeMapCache = [];
-let seasonCache = [];
-let currentPlayerCache = [];
-let exTimeMapCache = [];
 const leagueId = "d8545021-e9fc-48a3-af74-48685950a183";
 
 const dbPromise = idb.openDB("blaseball-modtracker", 1, {
@@ -16,12 +10,13 @@ const dbPromise = idb.openDB("blaseball-modtracker", 1, {
     }
 });
 
-async function initCaches() {
-    const response = await $.getJSON(
+const teamsPromise = (async () => {
+    return (await $.getJSON(
         "https://api.sibr.dev/chronicler/v1/teams"
-    );
-    teamCache = response.data;
+    )).data;
+})();
 
+const divisionsPromise = (async () => {
     const subleagueIds = (await $.getJSON(
         "https://api.sibr.dev/chronicler/v2/entities",
         {
@@ -31,48 +26,66 @@ async function initCaches() {
     )).items[0].data.subleagues;
 
     const divisionIds = (await $.getJSON(
-            "https://api.sibr.dev/chronicler/v2/entities",
-            {
-                type: "subleague",
-                id: subleagueIds.join()
-            }
-        )).items
-        .flatMap((info) => info.data.divisions)
+        "https://api.sibr.dev/chronicler/v2/entities",
+        {
+            type: "subleague",
+            id: subleagueIds.join()
+        }
+    )).items.flatMap((info) => info.data.divisions);
 
-    divisionCache = (await $.getJSON(
+    return (await $.getJSON(
         "https://api.sibr.dev/chronicler/v2/entities",
         {
             type: "division",
             id: divisionIds.join()
         }
     )).items;
+})();
 
-    timeMapCache = (await $.getJSON("https://api.sibr.dev/chronicler/v1/time/map")).data;
-    
-    seasonCache = (await $.getJSON("https://api.sibr.dev/chronicler/v1/time/seasons")).data;
+const timeMapPromise = (async () => {
+    return (await $.getJSON("https://api.sibr.dev/chronicler/v1/time/map")).data;
+})();
 
-    exTimeMapCache = extrapolateSeason(seasonCache[0])
-        .concat(extrapolateSeason(seasonCache[1], 97))
-        .concat(timeMapCache);
+const seasonsPromise = (async () => {
+    return (await $.getJSON("https://api.sibr.dev/chronicler/v1/time/seasons")).data;
+})();
 
-    let ccStart = exTimeMapCache.findIndex((d) => d.season === 10 && d.tournament === 0 && d.day === 119);
-    exTimeMapCache[ccStart].tournament = -1;
-    let ccStart2 = exTimeMapCache.findIndex((d) => d.season === 10 && d.tournament === 0 && d.day === 119);
-    exTimeMapCache[ccStart2].day = 0;
-    
-    let ccEnd = _.findLastIndex(exTimeMapCache, (d) => d.season === 10 && d.tournament === -1 && d.day === -1);
-    exTimeMapCache[ccEnd].tournament = 0;
-    exTimeMapCache[ccEnd].day = 15;
-}
+const exTimeMapPromise = (async () => {
+    const timeMap = await timeMapPromise;
+    const seasons = await seasonsPromise;
 
-async function initCurrentPlayersCache() {
-    currentPlayerCache = (await $.getJSON(
-        "https://api.sibr.dev/chronicler/v1/players"
-    )).data;
-}
+    let exTimeMap = extrapolateSeason(seasons[0])
+        .concat(extrapolateSeason(seasons[1], 97))
+        .concat(timeMap);
 
-function getTeamName(id) {
-    const teams = teamCache. map((team) => team.data );
+    let ccStart = exTimeMap.findIndex((d) => d.season === 10 && d.tournament === 0 && d.day === 119);
+    exTimeMap[ccStart].tournament = -1;
+    let ccStart2 = exTimeMap.findIndex((d) => d.season === 10 && d.tournament === 0 && d.day === 119);
+    exTimeMap[ccStart2].day = 0;
+
+    let ccEnd = _.findLastIndex(exTimeMap, (d) => d.season === 10 && d.tournament === -1 && d.day === -1);
+    exTimeMap[ccEnd].tournament = 0;
+    exTimeMap[ccEnd].day = 15;
+
+    return exTimeMap;
+})();
+
+const currentPlayersPromise = (async () => {
+    return (await $.getJSON("https://api.sibr.dev/chronicler/v1/players")).data;
+})();
+
+const totalDaysPromise = (async () => {
+    return (await seasonsPromise)
+        .map((s) => s.days)
+        .reduce((s1, s2) => s1 + s2);
+})();
+
+// divisionPromise.then((teams) => {
+//     console.log(teams);
+// });
+
+async function getTeamName(id) {
+    const teams = (await teamsPromise).map((team) => team.data );
     const team = teams.find((t) => t.id === id)
     if(team !== undefined) {
         return team.nickname
@@ -81,8 +94,8 @@ function getTeamName(id) {
     }
 }
 
-function getTeamDivision(id) {
-    const divisions = divisionCache.map((d) => d.data)
+async function getTeamDivision(id) {
+    const divisions = (await divisionsPromise).map((d) => d.data)
     const division = divisions.find((d) => d.teams.includes(id));
     if(division !== undefined) {
         return {
@@ -97,8 +110,9 @@ function getTeamDivision(id) {
     }
 }
 
-function getNearestDay(date) {
-    let sorted = [...exTimeMapCache].sort((a, b) => {
+async function getNearestDay(date) {
+    const exTimeMap = (await exTimeMapPromise);
+    let sorted = [...exTimeMap].sort((a, b) => {
         let aDate = new Date(a.startTime);
         let bDate = new Date(b.startTime);
         let aComp = Math.abs(date - aDate);
@@ -116,8 +130,9 @@ function getNearestDay(date) {
     }
 }
 
-function toAbsoluteDay(seasonDay) {
-    let daysBeforeSeason = seasonCache
+async function toAbsoluteDay(seasonDay) {
+    const seasons = (await seasonsPromise);
+    let daysBeforeSeason = seasons
         .filter((season) => {
             if(season.season < seasonDay.season) {
                 return true;

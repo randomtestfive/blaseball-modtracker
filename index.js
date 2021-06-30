@@ -2,10 +2,10 @@ let xScale = 2;
 let yScale = 10;
 
 async function renderPlayers() {
-    const simple = currentPlayerCache.map((player) => {
+    const simplePromises = (await currentPlayersPromise).map(async (player) => {
         const teamId = player.data.leagueTeamId || player.data.tournamentTeamId || player.teamId || "null";
         let shadow = false;
-        const team = teamCache.find((t) => t.id === teamId);
+        const team = (await teamsPromise).find((t) => t.id === teamId);
         if(team !== undefined) {
             shadow = team.data.shadows.includes(player.id);
         }
@@ -19,9 +19,10 @@ async function renderPlayers() {
             dust: (player.data.permAttr || []).includes("DUST")
         };
     });
+    const simple = await Promise.all(simplePromises);
     const grouped = _.groupBy(simple, "teamId");
-    const teams = Object.entries(grouped).map(([key, value]) => {
-        const teamName = getTeamName(key);
+    const teamPromises = Object.entries(grouped).map(async ([key, value]) => {
+        const teamName = await getTeamName(key);
         let players = [...value];
         players.sort((a, b) => {
             return (a.deceased * 4 + a.dust * 2 + a.shadow) - (b.deceased * 4 + b.dust * 2 + b.shadow);
@@ -32,9 +33,17 @@ async function renderPlayers() {
             players: players
         };
     });
+    const teams = await Promise.all(teamPromises);
 
-    const divisions = _.chain(teams)
-        .map((t) => { return { team: t, division: getTeamDivision(t.teamId)}})
+    const divisionMapPromises = teams.map(async (t) => {
+        return {
+            team: t,
+            division: await getTeamDivision(t.teamId)
+        };
+    });
+    const divisionMap = await Promise.all(divisionMapPromises)
+
+    const divisions = _.chain(divisionMap)
         .groupBy((i) => i.division.divisionId)
         .map((teams, division) => {
             return {
@@ -54,7 +63,7 @@ async function renderPlayers() {
     };
 }
 
-function drawTimeline(days) {
+async function drawTimeline(days) {
     let timeline = $("#timeline")[0];
     const height = timeline.height;
     let ctx = timeline.getContext('2d');
@@ -65,7 +74,7 @@ function drawTimeline(days) {
     }
 
     let daysSoFar = 0;
-    seasonCache.forEach((season) => {
+    (await seasonsPromise).forEach((season) => {
         ctx.fillRect(daysSoFar*xScale, height-50, 1, 50);
         ctx.fillText("S" + (season.season+1), daysSoFar*xScale, 20);
         daysSoFar += season.days
@@ -86,25 +95,29 @@ async function drawMods(id, days) {
     el.prop('height', height);
 
     ctx.fillStyle = "rgb(30, 30, 30)";
-    let firstDay = toAbsoluteDay(getNearestDay(new Date(first.validFrom)));
+    let firstDay = toAbsoluteDay(await getNearestDay(new Date(first.validFrom)));
     ctx.fillRect(0, 0, firstDay*xScale, height);
 
-    let daymap = mods
-        .map((m) => {
+    let daymapPromises = mods
+        .map(async (m) => {
+            const appearancePromises = m.appearances.map(async (a) => {
+                let end = toAbsoluteDay(await getNearestDay(new Date()));
+                if(a.end !== undefined) {
+                    end = await toAbsoluteDay(await getNearestDay(new Date(a.end)));
+                }
+                return {
+                    start: await toAbsoluteDay(await getNearestDay(new Date(a.start))),
+                    end: end
+                };
+            });
+            const appearances = await Promise.all(appearancePromises);
             return {
                 attr: m.attr,
-                appearances: m.appearances.map((a) => {
-                    let end = toAbsoluteDay(getNearestDay(new Date()));
-                    if(a.end !== undefined) {
-                        end = toAbsoluteDay(getNearestDay(new Date(a.end)));
-                    }
-                    return {
-                        start: toAbsoluteDay(getNearestDay(new Date(a.start))),
-                        end: end
-                    };
-                })
+                appearances: appearances
             };
-        })
+        });
+    
+    let daymap = await Promise.all(daymapPromises);
 
     for(let i = 0; i < daymap.length; i++) {
         const y = i * yScale;
@@ -129,8 +142,9 @@ async function drawMods(id, days) {
     });
 }
 
-function addPlayer(id) {
-    let player = currentPlayerCache.find((p) => p.id === id);
+async function addPlayer(id) {
+    let player = (await currentPlayersPromise).find((p) => p.id === id);
+    let totalDays = (await totalDaysPromise)
     let render = $.render.modViewTmpl({
         playerId: id,
         playerName: player.data.name,
@@ -196,38 +210,37 @@ $.templates("modViewTmpl", {
     markup: "#modViewTmpl"
 });
 
-let totalDays = 0;
 let playerDataRender = {};
 
-let smallerCachePromise = initCaches();
-let playerCachePromise = initCurrentPlayersCache();
-let allCachePromise = Promise.all([smallerCachePromise, playerCachePromise]);
-
-smallerCachePromise.then(() => {
-    totalDays = seasonCache
-        .map((s) => s.days)
-        .reduce((s1, s2) => s1 + s2);
+totalDaysPromise.then((totalDays) => {
     console.log(totalDays);
-
     $("#timeline-render").html($.render.timelineTmpl({width: (totalDays * xScale)+20}));
     drawTimeline(totalDays);
-    
-    // playerTest = playerTest.map((p) => {
-    //     p.width = totalDays * xScale;
-    //     return p;
-    // });
-    
-    // $("#player-mods").html($.render.modViewTmpl(playerTest));
-    // let scroll = $("#scroll2")
-    // scroll.prop('scrollLeft', scroll.prop('scrollWidth'));
-    // playerTest.forEach((p) => drawMods(p.playerId, totalDays));
+})
 
-    // playerTest.forEach((p) => addPlayer(p.playerId));
-});
+// smallerCachePromise.then(() => {
+//     totalDays = seasonCache
+//         .map((s) => s.days)
+//         .reduce((s1, s2) => s1 + s2);
+//     console.log(totalDays);
 
-allCachePromise.then(() => {
-    renderPlayers().then((realData) => {
-        playerDataRender = realData;
-        $("#playerlist").html($.render.allPlayersTmpl(playerDataRender));
-    });
+//     $("#timeline-render").html($.render.timelineTmpl({width: (totalDays * xScale)+20}));
+//     drawTimeline(totalDays);
+    
+//     // playerTest = playerTest.map((p) => {
+//     //     p.width = totalDays * xScale;
+//     //     return p;
+//     // });
+    
+//     // $("#player-mods").html($.render.modViewTmpl(playerTest));
+//     // let scroll = $("#scroll2")
+//     // scroll.prop('scrollLeft', scroll.prop('scrollWidth'));
+//     // playerTest.forEach((p) => drawMods(p.playerId, totalDays));
+
+//     // playerTest.forEach((p) => addPlayer(p.playerId));
+// });
+
+renderPlayers().then((realData) => {
+    playerDataRender = realData;
+    $("#playerlist").html($.render.allPlayersTmpl(playerDataRender));
 });
