@@ -222,7 +222,7 @@ smallerCachePromise.then(() => {
     // scroll.prop('scrollLeft', scroll.prop('scrollWidth'));
     // playerTest.forEach((p) => drawMods(p.playerId, totalDays));
 
-    playerTest.forEach((p) => addPlayer(p.playerId));
+    // playerTest.forEach((p) => addPlayer(p.playerId));
 });
 
 allCachePromise.then(() => {
