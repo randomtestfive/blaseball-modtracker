@@ -88,7 +88,7 @@ async function getTeamName(id) {
     const teams = (await teamsPromise).map((team) => team.data );
     const team = teams.find((t) => t.id === id)
     if(team !== undefined) {
-        return team.nickname
+        return team.fullName
     } else {
         return "null"
     }

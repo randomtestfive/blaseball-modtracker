@@ -210,7 +210,7 @@ $.templates("modViewTmpl", {
     markup: "#modViewTmpl"
 });
 
-let playerDataRender = {};
+const playerDataRenderPromise = renderPlayers();
 
 totalDaysPromise.then((totalDays) => {
     console.log(totalDays);
@@ -218,29 +218,42 @@ totalDaysPromise.then((totalDays) => {
     drawTimeline(totalDays);
 })
 
-// smallerCachePromise.then(() => {
-//     totalDays = seasonCache
-//         .map((s) => s.days)
-//         .reduce((s1, s2) => s1 + s2);
-//     console.log(totalDays);
-
-//     $("#timeline-render").html($.render.timelineTmpl({width: (totalDays * xScale)+20}));
-//     drawTimeline(totalDays);
+async function applyFilters() {
+    let playerDataRender = await playerDataRenderPromise;
+    let allDivisions = playerDataRender.divisions.concat(playerDataRender.others);
     
-//     // playerTest = playerTest.map((p) => {
-//     //     p.width = totalDays * xScale;
-//     //     return p;
-//     // });
-    
-//     // $("#player-mods").html($.render.modViewTmpl(playerTest));
-//     // let scroll = $("#scroll2")
-//     // scroll.prop('scrollLeft', scroll.prop('scrollWidth'));
-//     // playerTest.forEach((p) => drawMods(p.playerId, totalDays));
+    allDivisions.forEach((d) => {
+        let teamsShow = d.teams.map((t) => {
+            let playersShow = t.players.map((p) => {
+                let show = true;
+                if(!$("#forbidden-check").prop('checked')) {
+                    if(p.forbidden) {
+                        show = false;
+                    }
+                }
+        
+                let search = $("#searchbox").val().toLowerCase();
+                if(search.length !== 0) {
+                    if(!p.name.toLowerCase().includes(search) && !p.id.toLowerCase().startsWith(search)) {
+                        show = false;
+                    }
+                }
+        
+                $("#player-list-"+p.id).attr('hidden', !show);
 
-//     // playerTest.forEach((p) => addPlayer(p.playerId));
-// });
+                return show;
+            });
+            let show = !playersShow.every((p) => !p);
+            $("#team-"+t.teamId).attr('hidden', !show);
+            return show;
+        });;
+        let show = !teamsShow.every((t) => !t);
+        $("#division-"+d.divisionId).attr('hidden', !show);
+    })
+}
 
-renderPlayers().then((realData) => {
-    playerDataRender = realData;
-    $("#playerlist").html($.render.allPlayersTmpl(playerDataRender));
+playerDataRenderPromise.then((data) => {
+    $("#playerlist").html($.render.allPlayersTmpl(data));
+    $("#forbidden-check").change(applyFilters);
+    $("#searchbox").on('change keyup paste', applyFilters);
 });

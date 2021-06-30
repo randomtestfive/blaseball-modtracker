@@ -13,12 +13,16 @@
     <div class="d-flex flex-row mw-100 w-100 mv-100">
         <div id="sidebar" class="flex-shrink-0 px-3 pb-3 vh-100 border-end overflow-auto" style="width: 360px;">
             <div id="header" class="bg-white pt-3">
-                <div 
-                    class="d-flex align-items-center justify-content-between px-2 pb-3 mb-3 text-decoration-none border-bottom">
-                    <div class="fs-5 fw-semibold">Modtracker</div>
+                <div class="px-2 pb-3 mb-3 text-decoration-none border-bottom">
+                    <div class="d-flex align-items-center justify-content-between pb-2">
+                        <div class="fs-5 fw-semibold">Modtracker</div>
+                        <div>
+                            <input class="form-check-input" type="checkbox" value="" id="forbidden-check">
+                            <label class="form-check-label" for="forbidden-check">🍎</label>
+                        </div>
+                    </div>
                     <div>
-                        <input class="form-check-input" type="checkbox" value="" id="forbidden-check" disabled>
-                        <label class="form-check-label" for="forbidden-check">🍎</label>
+                        <input type="email" class="form-control" id="searchbox" placeholder="Search...">
                     </div>
                 </div>
             </div>
@@ -44,15 +48,15 @@
     </script>
 
     <script id="divisionTmpl" type="text/x-jsrender">
-        <li class="mb-1 border rounded">
+        <li id="division-{{>divisionId}}" class="mb-1 border rounded">
             <div data-bs-toggle="collapse"
-            data-bs-target="#division-{{>divisionId}}" aria-expanded="false">
+            data-bs-target="#division-list-{{>divisionId}}" aria-expanded="false">
                 <button class="btn btn-toggle align-items-center rounded collapsed" data-bs-toggle="collapse"
-                    data-bs-target="#division-{{>divisionId}}" aria-expanded="false">
+                    data-bs-target="#division-list-{{>divisionId}}" aria-expanded="false">
                     <b>{{>divisionName}}</b>
                 </button>
             </div>
-            <div class="collapse" id="division-{{>divisionId}}">
+            <div class="collapse" id="division-list-{{>divisionId}}">
                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                     {{for teams tmpl="teamTmpl"/}}
                 </ul>
@@ -61,20 +65,21 @@
     </script>
 
     <script id="teamTmpl" type="text/x-jsrender">
-        <li class="mb-1">
+        <li id="team-{{>teamId}}" class="mb-1">
             <div data-bs-toggle="collapse"
-                data-bs-target="#team-{{>teamId}}" aria-expanded="false">
+                data-bs-target="#team-list-{{>teamId}}" aria-expanded="false">
                 <button class="btn btn-toggle align-items-center rounded collapsed" data-bs-toggle="collapse"
-                    data-bs-target="#team-{{>teamId}}" aria-expanded="false">
+                    data-bs-target="#team-list-{{>teamId}}" aria-expanded="false">
                     {{>teamName}}
                 </button>
             </div>
-            <div class="collapse" id="team-{{>teamId}}">
+            <div class="collapse" id="team-list-{{>teamId}}">
                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                     {{for players}}
-                        <div class="{{if deceased}}deceased{{/if}} {{if dust}}dust{{/if}} {{if shadow}}player-shadow{{/if}}" {{if forbidden}}hidden{{/if}}>
+                        <div id="player-list-{{>id}}" class="{{if deceased}}deceased{{/if}} {{if dust}}dust{{/if}} {{if shadow}}player-shadow{{/if}}" {{if forbidden}}hidden{{/if}}>
                             <span class="float-start btn no-click">{{>name}}</span>
-                            <div  class="float-end">
+                            <div class="float-end">
+                                <!-- <span class="float-start btn no-click">{{>name}}</span> -->
                                 <button id="unadd-{{>id}}" type="button" class="btn bt-link remove-player" aria-label="Remove" onclick="removePlayer('{{>id}}')" hidden>
                                     <i class="fas fa-minus"></i>
                                 </button>
