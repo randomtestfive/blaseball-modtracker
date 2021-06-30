@@ -337,3 +337,9 @@ async function getPlayerFirstVersion(id) {
     return versions[0];
 }
 
+async function isPlayerCached(id) {
+    let db = (await dbPromise);
+    let count = await db.countFromIndex('player-versions', 'entityId', id);
+    return count !== 0;
+}
+

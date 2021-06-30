@@ -79,7 +79,9 @@
                         <div id="player-list-{{>id}}" class="{{if deceased}}deceased{{/if}} {{if dust}}dust{{/if}} {{if shadow}}player-shadow{{/if}}" {{if forbidden}}hidden{{/if}}>
                             <span class="float-start btn no-click">{{>name}}</span>
                             <div class="float-end">
-                                <!-- <span class="float-start btn no-click">{{>name}}</span> -->
+                                <span id="cache-{{>id}}" class="btn no-click" hidden>
+                                    <i class="fas fa-database"></i>
+                                </span>
                                 <button id="unadd-{{>id}}" type="button" class="btn bt-link remove-player" aria-label="Remove" onclick="removePlayer('{{>id}}')" hidden>
                                     <i class="fas fa-minus"></i>
                                 </button>

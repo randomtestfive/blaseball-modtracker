@@ -164,7 +164,8 @@ async function addPlayer(id) {
         scroll.prop('scrollLeft', scroll.prop('scrollWidth'));
     }
 
-    drawMods(id, totalDays);
+    await drawMods(id, totalDays);
+    updateCacheIcon();
 }
 
 function removePlayer(id) {
@@ -252,8 +253,24 @@ async function applyFilters() {
     })
 }
 
+async function updateCacheIcon() {
+    let playerDataRender = await playerDataRenderPromise;
+    let allDivisions = playerDataRender.divisions.concat(playerDataRender.others);
+    let players = allDivisions
+        .flatMap((d) => d.teams)
+        .flatMap((t) => t.players);
+    
+    let promises = players.map(async (p) => {
+        let cached = await isPlayerCached(p.id);
+        $("#cache-"+p.id).attr('hidden', !cached);
+    });
+
+    return await Promise.all(promises);
+}
+
 playerDataRenderPromise.then((data) => {
     $("#playerlist").html($.render.allPlayersTmpl(data));
     $("#forbidden-check").change(applyFilters);
     $("#searchbox").on('change keyup paste', applyFilters);
+    updateCacheIcon();
 });
