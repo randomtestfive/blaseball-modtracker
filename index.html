@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Modtracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="">
+</head>
+
+<body>
+    <div class="d-flex flex-row mw-100 w-100 mv-100">
+        <div id="sidebar" class="flex-shrink-0 px-3 pb-3 vh-100 border-end overflow-auto" style="width: 360px;">
+            <div id="header" class="bg-white pt-3">
+                <div 
+                    class="d-flex align-items-center justify-content-between px-2 pb-3 mb-3 text-decoration-none border-bottom">
+                    <div class="fs-5 fw-semibold">Modtracker</div>
+                    <div>
+                        <input class="form-check-input" type="checkbox" value="" id="forbidden-check" disabled>
+                        <label class="form-check-label" for="forbidden-check">🍎</label>
+                    </div>
+                </div>
+            </div>
+            <div id="playerlist">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+        <div id="scroll1" class="flex-grow-1 overflow-auto">
+            <div id="scroll2" class="w-100 vh-100 p-3 overflow-auto">
+                <div id="timeline-render" class="sticky-top"></div>
+                <div id="player-mods"></div>
+            </div>
+        </div>
+    </div>
+
+    <script id="allPlayersTmpl" type="text/x-jsrender">
+        <ul class="list-unstyled ps-0">
+            {{for divisions tmpl="divisionTmpl"/}}
+            {{for others tmpl="divisionTmpl"/}}
+        </ul>
+    </script>
+
+    <script id="divisionTmpl" type="text/x-jsrender">
+        <li class="mb-1 border rounded">
+            <div data-bs-toggle="collapse"
+            data-bs-target="#division-{{>divisionId}}" aria-expanded="false">
+                <button class="btn btn-toggle align-items-center rounded collapsed" data-bs-toggle="collapse"
+                    data-bs-target="#division-{{>divisionId}}" aria-expanded="false">
+                    <b>{{>divisionName}}</b>
+                </button>
+            </div>
+            <div class="collapse" id="division-{{>divisionId}}">
+                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    {{for teams tmpl="teamTmpl"/}}
+                </ul>
+            </div>
+        </li>
+    </script>
+
+    <script id="teamTmpl" type="text/x-jsrender">
+        <li class="mb-1">
+            <div data-bs-toggle="collapse"
+                data-bs-target="#team-{{>teamId}}" aria-expanded="false">
+                <button class="btn btn-toggle align-items-center rounded collapsed" data-bs-toggle="collapse"
+                    data-bs-target="#team-{{>teamId}}" aria-expanded="false">
+                    {{>teamName}}
+                </button>
+            </div>
+            <div class="collapse" id="team-{{>teamId}}">
+                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    {{for players}}
+                        <div class="{{if deceased}}deceased{{/if}} {{if dust}}dust{{/if}} {{if shadow}}player-shadow{{/if}}" {{if forbidden}}hidden{{/if}}>
+                            <span class="float-start btn no-click">{{>name}}</span>
+                            <div  class="float-end">
+                                <button id="unadd-{{>id}}" type="button" class="btn bt-link remove-player" aria-label="Remove" onclick="removePlayer('{{>id}}')" hidden>
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <button id="add-{{>id}}" type="button" class="btn bt-link" aria-label="Add" onclick="addPlayer('{{>id}}')">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div class="clearfix"></div>
+                        </div>
+                    {{/for}}
+                </ul>
+            </div>
+        </li>
+    </script>
+
+    <script id="timelineTmpl" type="text/x-jsrender">
+        <canvas id="timeline" class="px-3" width="{{>width}}" height="100"></canvas>
+    </script>
+
+    <script id="modViewTmpl" type="text/x-jsrender">
+        <div id="card-{{>playerId}}" class="card d-inline-block me-3 mb-1">
+            <div class="card-header">
+                <div class="d-inline-block sticky-left">
+                    <button id="remove-{{>playerId}}" type="button" class="btn bt-link remove-player" aria-label="Remove">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <span class="navbar-text">{{>playerName}}</span>
+                </div>
+                
+            </div>
+            <div class="card-body">
+                <canvas id="mods-{{>playerId}}" width="{{>width}}" height="100"></canvas>
+            </div>
+        </div>
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsrender/1.0.11/jsrender.min.js"
+        integrity="sha512-bKlNlbTH3duwZ28zoqEhXui/yuaPuQVci6OAVu0zh2WfYbEKD39HszVR8byP4/L4YyBo3b5CGIY+4ldVN93uCg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link href="index.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/underscore@1.13.1/underscore-umd-min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+        integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
+    <script src="https://unpkg.com/tippy.js@6/dist/tippy-bundle.umd.js"></script>
+    <script src="https://unpkg.com/idb/build/iife/index-min.js"></script>
+    <script src="caches.js"></script>
+    <script src="index.js"></script>
+</body>
+
+</html>
