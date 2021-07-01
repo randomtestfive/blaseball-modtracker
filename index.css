@@ -85,6 +85,10 @@ html {
     background-color: lightgrey;
 }
 
+.static {
+    background-color: darkslateblue;
+}
+
 .deceased {
     background-color: lightblue;
 }

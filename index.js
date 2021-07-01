@@ -5,9 +5,11 @@ async function renderPlayers() {
     const simplePromises = (await currentPlayersPromise).map(async (player) => {
         const teamId = player.data.leagueTeamId || player.data.tournamentTeamId || player.teamId || "null";
         let shadow = false;
+        let rotation = false
         const team = (await teamsPromise).find((t) => t.id === teamId);
         if(team !== undefined) {
             shadow = team.data.shadows.includes(player.id);
+            rotation = team.data.rotation.includes(player.id);
         }
         let attr = player.data.permAttr || [];
         return { 
@@ -15,10 +17,10 @@ async function renderPlayers() {
             teamId: teamId,
             name: player.data.name,
             shadow: shadow,
-            position: player.position,
-            rosterIndex: player.rosterIndex,
+            rotation: rotation,
             forbidden: player.forbidden,
             deceased: player.data.deceased,
+            static: attr.includes("STATIC"),
             replica: attr.includes("REPLICA"),
             dust: attr.includes("DUST"),
             legendary: attr.includes("LEGENDARY") && !attr.includes("REPLICA")
@@ -31,10 +33,12 @@ async function renderPlayers() {
         let players = [...value];
         players.sort((a, b) => {
             return a.deceased - b.deceased ||
+                a.static - b.static ||
                 a.legendary - b.legendary ||
                 a.dust - b.dust ||
                 a.shadow - b.shadow ||
-                a.rosterIndex - b.rosterIndex;
+                a.rotation - b.rotation ||
+                a.name.localeCompare(b.name);
         });
         return {
             teamId: key,
@@ -55,16 +59,20 @@ async function renderPlayers() {
     const divisions = _.chain(divisionMap)
         .groupBy((i) => i.division.divisionId)
         .map((teams, division) => {
+            let sortTeams = teams.map((t) => t.team);
+            sortTeams.sort((a, b) => a.teamName.localeCompare(b.teamName));
             return {
                 divisionId: division,
                 divisionName: teams[0].division.divisionName,
-                teams: teams.map((t) => t.team)
+                teams: sortTeams
             }
         })
         .value();
 
-    const realDivisions = divisions.filter((d) => d.divisionId !== "null-division");
-    const otherDivision = divisions.find((d) => d.divisionId === "null-division");
+    let realDivisions = divisions.filter((d) => d.divisionId !== "null-division");
+    let otherDivision = divisions.find((d) => d.divisionId === "null-division");
+
+    realDivisions.sort((a, b) => a.divisionName.localeCompare(b.divisionName));
 
     return {
         divisions: realDivisions,
