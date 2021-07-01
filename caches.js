@@ -153,7 +153,6 @@ async function toSeasonDay(day) {
 
     let foundSeason = {};
     let daysBefore = 0;
-    let [, ...after] = seasons;
 
     for(let i = 0; i < seasons.length; i++) {
         foundSeason = seasons[i];
