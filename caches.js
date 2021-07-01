@@ -148,6 +148,28 @@ async function toAbsoluteDay(seasonDay) {
     return daysBeforeSeason + seasonDay.day;
 }
 
+async function toSeasonDay(day) {
+    const seasons = await seasonsPromise;
+
+    let foundSeason = {};
+    let daysBefore = 0;
+    let [, ...after] = seasons;
+
+    for(let i = 0; i < seasons.length; i++) {
+        foundSeason = seasons[i];
+        if(daysBefore + foundSeason.days > day) {
+            break;
+        }
+        daysBefore += foundSeason.days;
+    }
+
+    return {
+        season: foundSeason.season,
+        tournament: foundSeason.tournament,
+        day: day - daysBefore
+    };
+}
+
 function extrapolateSeason(season, until) {
     if(until === undefined) {
         until = season.days - 1;

@@ -101,7 +101,7 @@ async function drawMods(id, days) {
     let daymapPromises = mods
         .map(async (m) => {
             const appearancePromises = m.appearances.map(async (a) => {
-                let end = toAbsoluteDay(await getNearestDay(new Date()));
+                let end = await toAbsoluteDay(await getNearestDay(new Date()));
                 if(a.end !== undefined) {
                     end = await toAbsoluteDay(await getNearestDay(new Date(a.end)));
                 }
@@ -135,10 +135,44 @@ async function drawMods(id, days) {
         followCursor: true,
         allowHTML: true
     })[0];
+
+    console.log(daymap);
     // tooltip.disable();
 
-    el.mousemove((event) => {
-        tooltip.setContent("<ul><li>day: " + Math.round(event.offsetX/xScale) + "</li><li>mod: " + daymap[Math.floor(event.offsetY/yScale)].attr + "</li></ul>");
+    el.mousemove(async (event) => {
+        let day = Math.round(event.offsetX/xScale);
+        let modIndex = Math.floor(event.offsetY/yScale);
+        let modAppearance = daymap[modIndex].appearances.filter((a) => day >= a.start && day <= a.end);
+        let total = daymap[modIndex].appearances
+            .map((a) => a.end - a.start)
+            .reduce((a, b) => a + b);
+
+        let seasonDay = await toSeasonDay(day);
+        
+        let modInfo = `
+            <div>
+                total days: ${total}
+            </div>
+        `
+        if(modAppearance.length === 1) {
+            let length = modAppearance[0].end - modAppearance[0].start;
+            modInfo = `
+                <div>
+                    this: ${length}
+                </div>
+            `
+        }
+        tooltip.setContent(`
+        <div>
+            <div>
+                day: ${"S" + (seasonDay.season + 1) + "D" + (seasonDay.day + 1)}
+            </div>
+            <div>
+                mod: ${daymap[modIndex].attr}
+            </div>
+            ${modInfo}
+        </div>
+        `);
     });
 }
 
