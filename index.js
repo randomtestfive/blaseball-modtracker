@@ -9,14 +9,19 @@ async function renderPlayers() {
         if(team !== undefined) {
             shadow = team.data.shadows.includes(player.id);
         }
+        let attr = player.data.permAttr || [];
         return { 
             id: player.id,
             teamId: teamId,
             name: player.data.name,
             shadow: shadow,
+            position: player.position,
+            rosterIndex: player.rosterIndex,
             forbidden: player.forbidden,
             deceased: player.data.deceased,
-            dust: (player.data.permAttr || []).includes("DUST")
+            replica: attr.includes("REPLICA"),
+            dust: attr.includes("DUST"),
+            legendary: attr.includes("LEGENDARY") && !attr.includes("REPLICA")
         };
     });
     const simple = await Promise.all(simplePromises);
@@ -25,7 +30,11 @@ async function renderPlayers() {
         const teamName = await getTeamName(key);
         let players = [...value];
         players.sort((a, b) => {
-            return (a.deceased * 4 + a.dust * 2 + a.shadow) - (b.deceased * 4 + b.dust * 2 + b.shadow);
+            return a.deceased - b.deceased ||
+                a.legendary - b.legendary ||
+                a.dust - b.dust ||
+                a.shadow - b.shadow ||
+                a.rosterIndex - b.rosterIndex;
         });
         return {
             teamId: key,

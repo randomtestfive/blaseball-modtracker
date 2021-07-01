@@ -69,14 +69,22 @@ html {
     margin-right: -0.5rem;
 }
 
-.deceased {
-    background-color: lightblue;
+.legendary {
+    background-color: lightgoldenrodyellow;
+}
+
+.replica {
+    background-color: darkorange;
 }
 
 .dust {
-    background-color: lightgoldenrodyellow;
+    background-color: burlywood;
 }
 
 .player-shadow {
     background-color: lightgrey;
+}
+
+.deceased {
+    background-color: lightblue;
 }
