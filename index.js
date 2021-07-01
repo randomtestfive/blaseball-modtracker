@@ -139,6 +139,8 @@ async function drawMods(id, days) {
         })
     }
 
+    $("#card-spinner-"+id).attr('hidden', true);
+
     let tooltip = tippy('#mods-'+id, {
         content: "test",
         followCursor: true,
