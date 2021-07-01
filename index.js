@@ -95,7 +95,7 @@ async function drawMods(id, days) {
     el.prop('height', height);
 
     ctx.fillStyle = "rgb(30, 30, 30)";
-    let firstDay = toAbsoluteDay(await getNearestDay(new Date(first.validFrom)));
+    let firstDay = await toAbsoluteDay(await getNearestDay(new Date(first.validFrom)));
     ctx.fillRect(0, 0, firstDay*xScale, height);
 
     let daymapPromises = mods
