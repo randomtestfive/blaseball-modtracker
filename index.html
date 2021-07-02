@@ -77,7 +77,7 @@
                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
                     {{for players}}
                         <div id="player-list-{{>id}}"
-                            class="{{if deceased}}deceased{{/if}} {{if legendary}}legendary{{/if}} {{if replica}}replica{{/if}} {{if dust}}dust{{/if}} {{if static}}static{{/if}} {{if shadow}}player-shadow{{/if}}" {{if forbidden}}hidden{{/if}}>
+                            class="{{if deceased}}deceased{{/if}} {{if legendary}}legendary{{/if}} {{if replica}}replica{{/if}} {{if dust}}dust{{/if}} {{if static}}static{{/if}} {{if shadow}}player-shadow{{/if}}" {{if shadow}}hidden{{/if}}>
                             <span class="float-start btn no-click">{{>name}}</span>
                             <div class="float-end">
                                 <span id="cache-{{>id}}" class="btn no-click" hidden>

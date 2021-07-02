@@ -71,7 +71,9 @@ const exTimeMapPromise = (async () => {
 })();
 
 const currentPlayersPromise = (async () => {
-    return (await $.getJSON("https://api.sibr.dev/chronicler/v1/players")).data;
+    return (await $.getJSON("https://api.sibr.dev/chronicler/v2/entities", {
+        type: "player"
+    })).items;
 })();
 
 const totalDaysPromise = (async () => {
@@ -79,10 +81,6 @@ const totalDaysPromise = (async () => {
         .map((s) => s.days)
         .reduce((s1, s2) => s1 + s2);
 })();
-
-// divisionPromise.then((teams) => {
-//     console.log(teams);
-// });
 
 async function getTeamName(id) {
     const teams = (await teamsPromise).map((team) => team.data );
@@ -223,13 +221,7 @@ function extrapolateSeason(season, until) {
 }
 
 async function getPlayerVersions(id) {
-    let current = (await $.getJSON(
-        "https://api.sibr.dev/chronicler/v2/entities",
-        {
-            type: "player",
-            id: id
-        }
-    )).items[0];
+    let current = (await currentPlayersPromise).find((p) => p.entityId === id);
 
     let db = (await dbPromise);
     let stored = await db.getAllFromIndex('player-versions', 'entityId', id);

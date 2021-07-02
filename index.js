@@ -3,22 +3,21 @@ let yScale = 10;
 
 async function renderPlayers() {
     const simplePromises = (await currentPlayersPromise).map(async (player) => {
-        const teamId = player.data.leagueTeamId || player.data.tournamentTeamId || player.teamId || "null";
+        const teamId = player.data.leagueTeamId || player.data.tournamentTeamId || "null";
         let shadow = false;
         let rotation = false
         const team = (await teamsPromise).find((t) => t.id === teamId);
         if(team !== undefined) {
-            shadow = team.data.shadows.includes(player.id);
-            rotation = team.data.rotation.includes(player.id);
+            shadow = team.data.shadows.includes(player.entityId);
+            rotation = team.data.rotation.includes(player.entityId);
         }
         let attr = player.data.permAttr || [];
         return { 
-            id: player.id,
+            id: player.entityId,
             teamId: teamId,
             name: player.data.name,
-            shadow: shadow,
             rotation: rotation,
-            forbidden: player.forbidden,
+            shadow: shadow,
             deceased: player.data.deceased,
             static: attr.includes("STATIC"),
             replica: attr.includes("REPLICA"),
@@ -196,7 +195,7 @@ async function drawMods(id, days) {
 }
 
 async function addPlayer(id) {
-    let player = (await currentPlayersPromise).find((p) => p.id === id);
+    let player = (await currentPlayersPromise).find((p) => p.entityId === id);
     let totalDays = (await totalDaysPromise)
     let render = $.render.modViewTmpl({
         playerId: id,
@@ -281,7 +280,7 @@ async function applyFilters() {
             let playersShow = t.players.map((p) => {
                 let show = true;
                 if(!$("#forbidden-check").prop('checked')) {
-                    if(p.forbidden) {
+                    if(p.shadow) {
                         show = false;
                     }
                 }
