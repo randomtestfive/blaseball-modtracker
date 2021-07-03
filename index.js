@@ -6,7 +6,7 @@ async function renderPlayers() {
         const teamId = player.data.leagueTeamId || player.data.tournamentTeamId || "null";
         let shadow = false;
         let rotation = false
-        const team = (await teamsPromise).find((t) => t.id === teamId);
+        const team = (await teamsPromise).find((t) => t.entityId === teamId);
         if(team !== undefined) {
             shadow = team.data.shadows.includes(player.entityId);
             rotation = team.data.rotation.includes(player.entityId);

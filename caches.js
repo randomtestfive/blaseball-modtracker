@@ -11,9 +11,9 @@ const dbPromise = idb.openDB("blaseball-modtracker", 1, {
 });
 
 const teamsPromise = (async () => {
-    return (await $.getJSON(
-        "https://api.sibr.dev/chronicler/v1/teams"
-    )).data;
+    return (await $.getJSON("https://api.sibr.dev/chronicler/v2/entities", {
+        type: "team"
+    })).items;
 })();
 
 const divisionsPromise = (async () => {
@@ -220,6 +220,22 @@ function extrapolateSeason(season, until) {
     return days;
 }
 
+async function depage(request) {
+    let items = [];
+    let incomplete = true;
+
+    while(incomplete) {
+        const response = (await $.getJSON(request));
+        items = items.concat(response.items);
+        request.data.page = response.nextPage;
+        if(response.nextPage === null) {
+            incomplete = false;
+        }
+    }
+
+    return items;
+}
+
 async function getPlayerVersions(id) {
     let current = (await currentPlayersPromise).find((p) => p.entityId === id);
 
@@ -232,8 +248,6 @@ async function getPlayerVersions(id) {
     }
     if(lastStored === undefined || lastValid !== current.validFrom) {
         console.log("getting new versiosn");
-        let newVersions = [];
-        let incomplete = true;
 
         let request = {
             url: "https://api.sibr.dev/chronicler/v2/versions",
@@ -243,18 +257,11 @@ async function getPlayerVersions(id) {
                 after: lastValid
             }
         }
-    
-        while(incomplete) {
-            const response = (await $.getJSON(request));
-            newVersions = newVersions.concat(response.items);
-            request.data.page = response.nextPage;
-            if(response.nextPage === null) {
-                incomplete = false;
-            }
-        }
+
+        let newVersions = await depage(request); 
 
         const tx = (await dbPromise).transaction('player-versions', 'readwrite');
-        await newVersions.map((v) => tx.store.add(v));
+        newVersions.map((v) => tx.store.add(v));
         await tx.done;
 
         return stored.concat(newVersions);
